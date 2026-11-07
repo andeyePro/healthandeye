@@ -72,6 +72,7 @@ targets:
       path: Apps/Watch/Info.plist
       properties:
         CFBundleDisplayName: Health&I
+        WKApplication: true
         WKCompanionAppBundleIdentifier: com.andeye.health
         WKRunsIndependentlyOfCompanionApp: true
         NSBluetoothAlwaysUsageDescription: Health&I connects to your heart-rate strap over Bluetooth.

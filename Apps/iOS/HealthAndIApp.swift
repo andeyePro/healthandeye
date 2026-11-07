@@ -14,6 +14,20 @@ struct HealthAndIApp: App {
                     guard !booted else { return }
                     booted = true
                     store.bootstrap()
+                    // Headless testing hooks: `--starter-pack` seeds an empty folder without the
+                    // alert; `--tab <name>` opens a tab. Used by scripts/mac-test.sh simulator runs.
+                    let args = ProcessInfo.processInfo.arguments
+                    if args.contains("--starter-pack"), store.needsStarterPackChoice { store.chooseStarterPack(true) }
+                    if let i = args.firstIndex(of: "--tab"), i + 1 < args.count {
+                        switch args[i + 1] {
+                        case "log": Navigation.shared.tab = .log
+                        case "row": Navigation.shared.tab = .row
+                        case "weights": Navigation.shared.tab = .weights
+                        case "catalogue": Navigation.shared.tab = .catalogue
+                        case "settings": Navigation.shared.tab = .settings
+                        default: break
+                        }
+                    }
                 }
                 .onChange(of: scenePhase) { _, phase in
                     if phase == .active, booted { store.reloadCatalogueIfChanged() }
