@@ -1,0 +1,83 @@
+name: HealthAndI
+options:
+  bundleIdPrefix: com.andeye
+  deploymentTarget:
+    iOS: "18.0"
+    watchOS: "11.0"
+  xcodeVersion: "27.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    DEVELOPMENT_TEAM: 2UA9YMNZF5
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: 1
+packages:
+  HealthAndICore:
+    path: .
+targets:
+  HealthAndI:
+    type: application
+    platform: iOS
+    supportedDestinations: [iOS, iPadOS]
+    sources:
+      - Apps/iOS
+      - Apps/Shared
+    dependencies:
+      - package: HealthAndICore
+      - target: HealthAndIWatch
+    entitlements:
+      path: Apps/iOS/HealthAndI.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
+        com.apple.developer.icloud-container-identifiers: [iCloud.com.andeye.health]
+        com.apple.developer.icloud-services: [CloudDocuments]
+        com.apple.developer.ubiquity-container-identifiers: [iCloud.com.andeye.health]
+    info:
+      path: Apps/iOS/Info.plist
+      properties:
+        CFBundleDisplayName: Health&I
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        NSBluetoothAlwaysUsageDescription: Health&I connects to your rowing machine and heart-rate strap over Bluetooth.
+        NSHealthShareUsageDescription: Health&I reads the Apple Health metrics you switch on, to show them beside your training.
+        NSHealthUpdateUsageDescription: Health&I writes the workouts and samples you switch on to Apple Health.
+        UIBackgroundModes: [bluetooth-central]
+        NSUbiquitousContainers:
+          iCloud.com.andeye.health:
+            NSUbiquitousContainerIsDocumentScopePublic: true
+            NSUbiquitousContainerName: Health&I
+            NSUbiquitousContainerSupportedFolderLevels: Any
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.andeye.health
+        TARGETED_DEVICE_FAMILY: "1,2"
+  HealthAndIWatch:
+    type: application.watchapp2
+    platform: watchOS
+    sources:
+      - Apps/Watch
+      - Apps/Shared
+    dependencies:
+      - package: HealthAndICore
+    entitlements:
+      path: Apps/Watch/HealthAndIWatch.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
+    info:
+      path: Apps/Watch/Info.plist
+      properties:
+        CFBundleDisplayName: Health&I
+        WKCompanionAppBundleIdentifier: com.andeye.health
+        WKRunsIndependentlyOfCompanionApp: true
+        NSBluetoothAlwaysUsageDescription: Health&I connects to your heart-rate strap over Bluetooth.
+        NSHealthShareUsageDescription: Health&I reads heart rate during workouts.
+        NSHealthUpdateUsageDescription: Health&I saves your workouts to Apple Health.
+        WKBackgroundModes: [workout-processing]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.andeye.health.watchkitapp

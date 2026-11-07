@@ -1,0 +1,2 @@
+# vibe content guard allowlist (ERE, whole line)
+^\.claude/settings\.local\.json$
