@@ -1,0 +1,126 @@
+[
+  {
+    "connection": {
+      "hr_relay": true,
+      "protocol_name": "ftms"
+    },
+    "enabled": true,
+    "id": "eq-woodrower",
+    "kind": "rower",
+    "limits": {
+      "dumbbell_max_kg": 25,
+      "resistance_max": 15,
+      "resistance_min": 1,
+      "static_max_kg": 900,
+      "user_max_kg": 130
+    },
+    "name": "Domyos Row 0214 WoodRower",
+    "notes": "Folds to a bench; FTMS + HRM over Bluetooth.",
+    "quirks": [
+      "Console kcal comes from distance/pace, not work: higher resistance reports fewer kcal.",
+      "Console logs only resistance changes made mid-session, so a level set before starting records as 1."
+    ]
+  },
+  {
+    "connection": {
+      "ble_name": "Polar H10"
+    },
+    "enabled": true,
+    "id": "eq-polar-h10",
+    "kind": "other",
+    "limits": {},
+    "name": "Polar H10",
+    "notes": "max 2 Bluetooth connections",
+    "quirks": []
+  },
+  {
+    "enabled": true,
+    "id": "eq-dumbbell-bar",
+    "kind": "bar",
+    "limits": {},
+    "mass_kg": 1.47,
+    "name": "1\" smooth dumbbell bar",
+    "notes": "14 in, 11 cm loadable sleeves",
+    "quantity": 2,
+    "quirks": []
+  },
+  {
+    "enabled": true,
+    "id": "eq-plate-5-03",
+    "kind": "plate",
+    "limits": {
+      "per_sleeve_max": 1
+    },
+    "mass_kg": 5.03,
+    "name": "Everlast cement plate 5.03 kg",
+    "notes": "50 mm thick",
+    "quantity": 2,
+    "quirks": []
+  },
+  {
+    "enabled": true,
+    "id": "eq-plate-4-92",
+    "kind": "plate",
+    "limits": {
+      "per_sleeve_max": 1
+    },
+    "mass_kg": 4.92,
+    "name": "Everlast cement plate 4.92 kg",
+    "notes": "50 mm thick",
+    "quantity": 2,
+    "quirks": []
+  },
+  {
+    "enabled": true,
+    "id": "eq-collar-yibaijia",
+    "kind": "collar",
+    "limits": {},
+    "mass_kg": 0.0531,
+    "name": "Yibaijia 25 mm cam-lock collar",
+    "quantity": 4,
+    "quirks": []
+  },
+  {
+    "enabled": true,
+    "id": "eq-hex-5kg",
+    "kind": "dumbbell",
+    "limits": {},
+    "mass_kg": 5,
+    "name": "Songmics 5 kg hex dumbbell",
+    "quantity": 2,
+    "quirks": []
+  },
+  {
+    "enabled": false,
+    "id": "eq-pullup-bar",
+    "kind": "other",
+    "limits": {},
+    "name": "Sportneer doorway pull-up bar",
+    "notes": "Stored, not yet in use",
+    "quirks": []
+  },
+  {
+    "enabled": false,
+    "id": "eq-band-green",
+    "kind": "band",
+    "limits": {},
+    "name": "PROIRON assist band (green)",
+    "quirks": []
+  },
+  {
+    "enabled": false,
+    "id": "eq-band-yellow",
+    "kind": "band",
+    "limits": {},
+    "name": "PROIRON assist band (yellow)",
+    "quirks": []
+  },
+  {
+    "enabled": false,
+    "id": "eq-band-purple",
+    "kind": "band",
+    "limits": {},
+    "name": "PROIRON assist band (purple)",
+    "quirks": []
+  }
+]

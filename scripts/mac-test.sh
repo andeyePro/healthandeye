@@ -15,7 +15,7 @@
 # sync+run ssh call. Inside a subagent run it FOREGROUND with timeout 600000, never
 # run_in_background.
 set -e
-MAC_HOST="${MAC_HOST:-host.docker.internal}"
+MAC_HOST="${MAC_HOST:-$(cat /workspace/.vibe/mac-host 2>/dev/null || echo host.docker.internal)}"
 KEY="${MAC_KEY:-/workspace/.vibe/id_ed25519_mac}"
 SSH_CMD="ssh -i $KEY -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=accept-new claude@$MAC_HOST"
 DEST='~/builds/healthandeye/src'

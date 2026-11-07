@@ -1,0 +1,22 @@
+{
+  "effort_scale": "rir",
+  "energy_prefers_hr": true,
+  "hud_tiles": [
+    "heart_rate",
+    "zone",
+    "stroke_rate",
+    "pace",
+    "distance",
+    "resistance",
+    "elapsed"
+  ],
+  "modules": {},
+  "progression": {
+    "enabled": true,
+    "too_light_reps_above": 3,
+    "too_light_rir_at_least": 3,
+    "under_warmed_rep_rise": 2
+  },
+  "set_notation": "reps@RIR",
+  "zone_cues": true
+}

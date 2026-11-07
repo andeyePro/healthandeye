@@ -1,0 +1,122 @@
+[
+  {
+    "enabled": true,
+    "equipment_ids": [
+      "eq-dumbbell-bar",
+      "eq-plate-5-03",
+      "eq-plate-4-92",
+      "eq-collar-yibaijia",
+      "eq-woodrower"
+    ],
+    "id": "ex-single-arm-row",
+    "measure": "reps",
+    "name": "Single-arm row",
+    "pattern": "pull",
+    "unilateral": true
+  },
+  {
+    "enabled": true,
+    "equipment_ids": [
+      "eq-dumbbell-bar",
+      "eq-plate-5-03",
+      "eq-plate-4-92",
+      "eq-collar-yibaijia"
+    ],
+    "id": "ex-single-arm-floor-press",
+    "measure": "reps",
+    "name": "Single-arm floor press",
+    "pattern": "push",
+    "unilateral": true
+  },
+  {
+    "enabled": true,
+    "equipment_ids": [],
+    "id": "ex-press-up",
+    "measure": "reps",
+    "name": "Press-up",
+    "pattern": "push",
+    "unilateral": false
+  },
+  {
+    "enabled": true,
+    "equipment_ids": [
+      "eq-dumbbell-bar",
+      "eq-plate-5-03",
+      "eq-plate-4-92",
+      "eq-collar-yibaijia"
+    ],
+    "id": "ex-goblet-squat",
+    "measure": "reps",
+    "name": "Goblet squat",
+    "pattern": "squat",
+    "unilateral": false
+  },
+  {
+    "enabled": true,
+    "equipment_ids": [
+      "eq-dumbbell-bar",
+      "eq-plate-5-03",
+      "eq-plate-4-92",
+      "eq-collar-yibaijia"
+    ],
+    "id": "ex-split-squat",
+    "measure": "reps",
+    "name": "Split squat",
+    "pattern": "squat",
+    "unilateral": true
+  },
+  {
+    "enabled": true,
+    "equipment_ids": [
+      "eq-dumbbell-bar",
+      "eq-plate-5-03",
+      "eq-plate-4-92",
+      "eq-collar-yibaijia"
+    ],
+    "id": "ex-single-leg-rdl",
+    "measure": "reps",
+    "name": "Single-leg RDL",
+    "pattern": "hinge",
+    "unilateral": true
+  },
+  {
+    "enabled": true,
+    "equipment_ids": [
+      "eq-dumbbell-bar",
+      "eq-plate-5-03",
+      "eq-plate-4-92",
+      "eq-collar-yibaijia"
+    ],
+    "id": "ex-suitcase-carry",
+    "measure": "time",
+    "name": "Suitcase carry",
+    "pattern": "carry",
+    "unilateral": true
+  },
+  {
+    "enabled": true,
+    "equipment_ids": [
+      "eq-dumbbell-bar",
+      "eq-plate-5-03",
+      "eq-plate-4-92",
+      "eq-collar-yibaijia"
+    ],
+    "id": "ex-bicep-curl",
+    "measure": "reps",
+    "name": "Bicep curl",
+    "pattern": "pull",
+    "unilateral": false
+  },
+  {
+    "enabled": true,
+    "equipment_ids": [
+      "eq-woodrower"
+    ],
+    "id": "ex-row",
+    "measure": "distance",
+    "name": "Row",
+    "notes": "Strokes and distance come from the rower over FTMS.",
+    "pattern": "cardio",
+    "unilateral": false
+  }
+]

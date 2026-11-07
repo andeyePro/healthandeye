@@ -56,7 +56,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.andeye.health
         TARGETED_DEVICE_FAMILY: "1,2"
   HealthAndIWatch:
-    type: application.watchapp2
+    type: application
     platform: watchOS
     sources:
       - Apps/Watch

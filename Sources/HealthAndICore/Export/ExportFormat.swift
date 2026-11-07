@@ -56,7 +56,7 @@ enum ExportFormat {
         return LoadBuilder.totalKg(load, catalogue: catalogue)
     }
 
-    /// "11.53 kg per hand (1× Bar 1.47 kg + 2× Plate 5.03 kg)"; breakdown omitted for fixed loads.
+    /// "11.53 kg per hand (1× Bar = 1.47 kg + 2× Plate = 10.06 kg)"; breakdown omitted for fixed loads.
     static func loadDescription(_ load: Load?, _ catalogue: Catalogue) -> String {
         guard let load else { return "" }
         var out = ""
@@ -64,9 +64,9 @@ enum ExportFormat {
             out = "\(num(total)) kg"
             if load.perHand { out += " per hand" }
         }
-        let parts = LoadBuilder.breakdown(load, catalogue: catalogue)
+        let parts = load.parts.isEmpty ? [] : LoadBuilder.breakdown(load, catalogue: catalogue)
         if !parts.isEmpty {
-            let text = parts.map { "\($0.count)× \($0.name) \(num($0.kg)) kg" }.joined(separator: " + ")
+            let text = parts.map { "\($0.count)× \($0.name) = \(num($0.kg)) kg" }.joined(separator: " + ")
             out += out.isEmpty ? text : " (\(text))"
         }
         if let label = load.label, !label.isEmpty { out += out.isEmpty ? label : " [\(label)]" }

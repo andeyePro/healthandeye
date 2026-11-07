@@ -1,0 +1,14 @@
+[
+  {
+    "id": "zs-heart-rate",
+    "metric": "heart_rate",
+    "name": "Heart rate (example)",
+    "zones": [
+      {
+        "lower": 110,
+        "name": "Zone 2",
+        "upper": 120
+      }
+    ]
+  }
+]
