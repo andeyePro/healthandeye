@@ -35,8 +35,32 @@ final class WeightsSession {
 
     func begin() {
         let now = Date()
-        session = Session(id: SessionID.make(start: now, type: "weights"), start: now, type: "weights")
+        open(id: SessionID.make(start: now, type: "weights"), start: now, hrSource: nil)
         exerciseId = nil
+    }
+
+    /// Resumes a saved session with the same id rather than starting over it, so a late watch
+    /// message can never overwrite sets already on disk.
+    private func open(id: String, start: Date, hrSource: Source?) {
+        if var saved = store.sessions.first(where: { $0.id == id }) {
+            saved.end = nil
+            session = saved
+        } else {
+            session = Session(id: id, start: start, type: "weights", hrSource: hrSource)
+        }
+        publish()
+    }
+
+    private func publish() {
+        let link = session.map { WeightsLink(sessionId: $0.id, start: $0.start, active: true) }
+            ?? WeightsLink(sessionId: "", start: Date(), active: false)
+        WatchBridge.shared.send(weights: link)
+    }
+
+    private func nextSetId(in s: Session) -> String {
+        var n = s.sets.count + 1
+        while s.sets.contains(where: { $0.id == "set-\(n)" }) { n += 1 }
+        return "set-\(n)"
     }
 
     func select(_ ex: Exercise) {
@@ -56,7 +80,7 @@ final class WeightsSession {
     func logSet() {
         guard var s = session, let ex = exercise else { return }
         var entry = SetEntry(
-            id: "set-\(s.sets.count + 1)", exerciseId: ex.id, side: side,
+            id: nextSetId(in: s), exerciseId: ex.id, side: side,
             reps: ex.measure == .reps || ex.measure == .strokes ? reps : nil,
             seconds: ex.measure == .time ? seconds : nil,
             meters: ex.measure == .distance ? meters : nil,
@@ -93,10 +117,98 @@ final class WeightsSession {
         s.end = Date()
         session = nil
         exerciseId = nil
+        publish()
         guard !s.sets.isEmpty else { return }
         store.saveSession(s)
         store.writeDerived()
         HealthPush.workout(s, activity: .traditionalStrengthTraining)
+    }
+
+    func discard() {
+        _ = rest.stop()
+        session = nil
+        exerciseId = nil
+        publish()
+    }
+
+    // MARK: Watch
+
+    // Single owner: the phone's store holds the one copy of a weights session. The watch tags every set
+    // and command with a session id and, on finish, sends its whole session too. Everything that arrives
+    // is merged by session id and deduplicated by set id (watch set ids embed the session id, so they are
+    // unique across sessions), so a set delivered twice, or once alone and once inside its session, is
+    // counted once.
+
+    func connectWatch() {
+        let bridge = WatchBridge.shared
+        bridge.onSet = { [weak self] entry, link in self?.receive(set: entry, link: link) }
+        bridge.onCommand = { [weak self] command, link in self?.receive(command: command, link: link) }
+        bridge.onSession = { [weak self] incoming in self?.merge(incoming) }
+        publish()
+        bridge.activate()
+    }
+
+    private var knownSetIds: Set<String> {
+        Set((session?.sets ?? []).map(\.id) + store.sessions.flatMap { $0.sets.map(\.id) })
+    }
+
+    private func receive(set entry: SetEntry, link: WeightsLink?) {
+        guard !knownSetIds.contains(entry.id) else { return }
+        if session == nil, let link, var saved = store.sessions.first(where: { $0.id == link.sessionId }) {
+            add([entry], to: &saved)
+            store.saveSession(saved)
+            return
+        }
+        if session == nil {
+            let start = link?.start ?? entry.timestamp ?? Date()
+            open(id: link?.sessionId ?? SessionID.make(start: start, type: "weights"), start: start, hrSource: .appleWatch)
+        }
+        guard var s = session else { return }
+        add([entry], to: &s)
+        session = s
+        store.saveSession(s)
+    }
+
+    private func receive(command: WatchCommand, link: WeightsLink?) {
+        switch command {
+        case .startSession:
+            guard session == nil else { return }
+            let start = link?.start ?? Date()
+            open(id: link?.sessionId ?? SessionID.make(start: start, type: "weights"), start: start, hrSource: .appleWatch)
+        case .stopSession:
+            guard let s = session, link == nil || link?.sessionId == s.id else { return }
+            finish()
+        }
+    }
+
+    private func merge(_ incoming: Session) {
+        if var s = session, s.id == incoming.id {
+            add(incoming.sets, to: &s)
+            session = s
+            store.saveSession(s)
+        } else if var saved = store.sessions.first(where: { $0.id == incoming.id }) {
+            add(incoming.sets, to: &saved)
+            if saved.end == nil { saved.end = incoming.end }
+            store.saveSession(saved)
+        } else {
+            let known = knownSetIds
+            var fresh = incoming
+            fresh.sets.removeAll { known.contains($0.id) }
+            guard !fresh.sets.isEmpty else { return }
+            if fresh.hrSource == nil { fresh.hrSource = .appleWatch }
+            store.saveSession(fresh)
+        }
+    }
+
+    private func add(_ entries: [SetEntry], to s: inout Session) {
+        let have = Set(s.sets.map(\.id))
+        let new = entries.filter { !have.contains($0.id) }
+        guard !new.isEmpty else { return }
+        s.sets = (s.sets + new).sorted { ($0.timestamp ?? .distantPast) < ($1.timestamp ?? .distantPast) }
+        let equipment = new.compactMap { store.catalogue.exercise(id: $0.exerciseId)?.equipmentIds }.flatMap { $0 }
+        if !equipment.isEmpty {
+            s.equipmentIds = Array(Set(s.equipmentIds + equipment)).sorted()
+        }
     }
 }
 
@@ -161,10 +273,7 @@ struct WeightsView: View {
             Section {
                 Button("Finish session") { model.finish() }
                     .bold()
-                Button("Discard session", role: .destructive) {
-                    _ = model.rest.stop()
-                    model.session = nil
-                }
+                Button("Discard session", role: .destructive) { model.discard() }
                 .disabled(!(model.session?.sets.isEmpty ?? true))
             }
         }

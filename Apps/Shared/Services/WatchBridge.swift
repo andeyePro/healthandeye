@@ -36,6 +36,19 @@ enum WatchCommand: String, Codable, Sendable {
     case stopSession = "stop_session"
 }
 
+/// Ties a weights message to one session. The phone owns the saved session; the watch tags every set and
+/// command with the id, and the phone publishes its own current session the same way in the application
+/// context, so both sides log into one id and merges line up by session id and set id.
+struct WeightsLink: Codable, Equatable, Sendable {
+    var sessionId: String
+    var start: Date
+    var active: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case sessionId = "session_id", start, active
+    }
+}
+
 /// WatchConnectivity on both sides. Payloads are JSON `Data` under a single key so that only
 /// Sendable values cross from WCSession's queue to the main actor.
 @Observable @MainActor
@@ -48,6 +61,7 @@ final class WatchBridge: NSObject, WCSessionDelegate {
         static let command = "command"
         static let catalogue = "catalogue"
         static let session = "session"
+        static let weights = "weights"
     }
 
     var latestSnapshot: HUDSnapshot?
@@ -55,16 +69,21 @@ final class WatchBridge: NSObject, WCSessionDelegate {
     var incomingCommands: [WatchCommand] = []
     var incomingSessions: [Session] = []
     var receivedCatalogue: Catalogue?
+    /// The phone's current weights session, as last published in the application context.
+    var weightsLink: WeightsLink?
     var isReachable = false
     var isActivated = false
 
-    @ObservationIgnored var onSet: ((SetEntry) -> Void)?
-    @ObservationIgnored var onCommand: ((WatchCommand) -> Void)?
+    @ObservationIgnored var onSet: ((SetEntry, WeightsLink?) -> Void)?
+    @ObservationIgnored var onCommand: ((WatchCommand, WeightsLink?) -> Void)?
     @ObservationIgnored var onSession: ((Session) -> Void)?
+    @ObservationIgnored var onWeightsLink: ((WeightsLink) -> Void)?
     @ObservationIgnored private var lastContext: [String: Data] = [:]
+    @ObservationIgnored private var activationRequested = false
 
     func activate() {
-        guard WCSession.isSupported() else { return }
+        guard WCSession.isSupported(), !activationRequested else { return }
+        activationRequested = true
         let s = WCSession.default
         s.delegate = self
         s.activate()
@@ -102,38 +121,44 @@ final class WatchBridge: NSObject, WCSessionDelegate {
             session.transferFile(url, metadata: ["kind": Key.catalogue])
         }
     }
+
+    /// Publishes the phone's weights session state so the watch joins (or leaves) the same session id.
+    func send(weights link: WeightsLink) {
+        guard let data = try? JSONCoding.encode(link) else { return }
+        updateContext(Key.weights, data)
+    }
     #endif
 
     // MARK: Watch -> phone
 
     #if os(watchOS)
     /// Queued reliably (transferUserInfo) so sets logged out of range still arrive.
-    func send(set entry: SetEntry) {
-        guard let session, let data = try? JSONCoding.encode(entry) else { return }
-        session.transferUserInfo([Key.set: data])
+    func send(set entry: SetEntry, link: WeightsLink) {
+        guard let session, let data = try? JSONCoding.encode(entry),
+              let linkData = try? JSONCoding.encode(link) else { return }
+        session.transferUserInfo([Key.set: data, Key.weights: linkData])
     }
 
-    func send(command: WatchCommand) {
+    /// Queued (transferUserInfo) rather than messaged: a stop must not be lost while out of range, and
+    /// FIFO delivery keeps it ordered after the sets it closes.
+    func send(command: WatchCommand, link: WeightsLink? = nil) {
         guard let session, let data = try? JSONCoding.encode(command) else { return }
-        if session.isReachable {
-            session.sendMessage([Key.command: data], replyHandler: nil) { _ in
-                Task { @MainActor in WatchBridge.shared.session?.transferUserInfo([Key.command: data]) }
-            }
-        } else {
-            session.transferUserInfo([Key.command: data])
-        }
+        var payload = [Key.command: data]
+        if let link, let linkData = try? JSONCoding.encode(link) { payload[Key.weights] = linkData }
+        session.transferUserInfo(payload)
     }
 
-    /// A whole session recorded standalone on the watch.
+    /// A whole weights session from the watch; the phone merges it by session id and set id.
     func send(session recorded: Session) {
         guard let session, let data = try? JSONCoding.encode(recorded) else { return }
         session.transferUserInfo([Key.session: data])
     }
     #endif
 
+    /// Kept even before activation so the latest state goes out once the session activates.
     private func updateContext(_ key: String, _ data: Data) {
-        guard let session else { return }
         lastContext[key] = data
+        guard let session else { return }
         try? session.updateApplicationContext(lastContext)
     }
 
@@ -143,13 +168,19 @@ final class WatchBridge: NSObject, WCSessionDelegate {
         if let d = payload[Key.snapshot], let s = try? JSONCoding.decode(HUDSnapshot.self, from: d) {
             latestSnapshot = s
         }
+        let link = payload[Key.weights].flatMap { try? JSONCoding.decode(WeightsLink.self, from: $0) }
+        let isTag = payload[Key.set] != nil || payload[Key.command] != nil
         if let d = payload[Key.set], let e = try? JSONCoding.decode(SetEntry.self, from: d) {
             incomingSets.append(e)
-            onSet?(e)
+            onSet?(e, link)
         }
         if let d = payload[Key.command], let c = try? JSONCoding.decode(WatchCommand.self, from: d) {
             incomingCommands.append(c)
-            onCommand?(c)
+            onCommand?(c, link)
+        }
+        if !isTag, let link {
+            weightsLink = link
+            onWeightsLink?(link)
         }
         if let d = payload[Key.session], let s = try? JSONCoding.decode(Session.self, from: d) {
             incomingSessions.append(s)
@@ -176,6 +207,9 @@ final class WatchBridge: NSObject, WCSessionDelegate {
         Task { @MainActor in
             self.isActivated = activated
             self.isReachable = reachable
+            if activated, !self.lastContext.isEmpty {
+                try? self.session?.updateApplicationContext(self.lastContext)
+            }
             self.receive(context)
         }
     }

@@ -33,7 +33,7 @@ public struct ProgressionRules: Codable, Equatable, Hashable, Sendable {
 
 public struct Settings: Codable, Equatable, Hashable, Sendable {
     public static let defaultHudTiles = ["heart_rate", "zone", "stroke_rate", "pace", "distance", "resistance", "elapsed"]
-    public static let defaultOnModules: Set<String> = [Module.weights.rawValue, Module.export.rawValue]
+    public static let defaultOnModules: Set<String> = [Module.rowing.rawValue, Module.weights.rawValue, Module.export.rawValue]
 
     /// Keyed by `Module` raw values (other keys such as "closed_loop" allowed). Use `isEnabled` to read.
     public var modules: [String: Bool]
@@ -73,7 +73,7 @@ public struct Settings: Codable, Equatable, Hashable, Sendable {
         energyPrefersHR = try c.val(.energyPrefersHR, d.energyPrefersHR)
     }
 
-    /// Absent keys default to on for weights and export, off otherwise.
+    /// Absent keys default to on for rowing, weights and export, off otherwise.
     public func isEnabled(_ module: Module) -> Bool {
         isEnabled(module.rawValue)
     }

@@ -3,6 +3,9 @@ import HealthAndICore
 
 @MainActor @Observable
 final class WeightsModel {
+    /// Shared so the bridge callback outlives any one view instance.
+    static let shared = WeightsModel()
+
     private(set) var session: Session?
     let rest = RestTimer()
 
@@ -16,10 +19,36 @@ final class WeightsModel {
 
     var effortScale: EffortScale { store.catalogue.settings.effortScale }
 
+    private init() {
+        bridge.onWeightsLink = { [weak self] link in self?.follow(link) }
+        if let link = bridge.weightsLink { follow(link) }
+    }
+
+    private var link: WeightsLink? {
+        session.map { WeightsLink(sessionId: $0.id, start: $0.start, active: true) }
+    }
+
+    /// The watch generates the id the phone would, and the phone adopts it.
     func startSession() {
         let now = Date()
-        session = Session(id: RowModel.sessionId(start: now, type: "weights"), start: now, type: "weights")
+        session = Session(id: RowModel.sessionId(start: now, type: "weights"), start: now, type: "weights",
+                          hrSource: .appleWatch)
         rest.stop()
+        if let link { bridge.send(command: .startSession, link: link) }
+    }
+
+    /// Joins the phone's session, or closes ours when the phone finishes it. A watch session that already
+    /// has sets is kept: the phone appends those sets to its own session as they arrive.
+    private func follow(_ phone: WeightsLink) {
+        if phone.active {
+            guard Date().timeIntervalSince(phone.start) < 12 * 3600 else { return }
+            if session == nil || (session?.id != phone.sessionId && session?.sets.isEmpty == true) {
+                session = Session(id: phone.sessionId, start: phone.start, type: "weights")
+                rest.stop()
+            }
+        } else if session?.id == phone.sessionId {
+            finishSession(notifyPhone: false)
+        }
     }
 
     func log(exercise: Exercise, side: Side, reps: Int, effort: Double) {
@@ -37,15 +66,18 @@ final class WeightsModel {
         rest.apply(to: &entry)
         current.sets.append(entry)
         session = current
-        bridge.send(set: entry)
+        bridge.send(set: entry, link: WeightsLink(sessionId: current.id, start: current.start, active: true))
         Haptics.play(.up)
         rest.start(for: exercise)
     }
 
-    func finishSession() {
+    /// Everything goes by transferUserInfo, which queues while out of range and delivers on reconnect;
+    /// the local copy is kept only when the phone cannot be reached now.
+    func finishSession(notifyPhone: Bool = true) {
         guard var current = session else { return }
         current.end = .now
         rest.stop()
+        if notifyPhone, let link { bridge.send(command: .stopSession, link: link) }
         if !current.sets.isEmpty {
             bridge.send(session: current)
             if !bridge.isReachable {
@@ -57,7 +89,7 @@ final class WeightsModel {
 }
 
 struct WeightsView: View {
-    @State private var model = WeightsModel()
+    @State private var model = WeightsModel.shared
     @State private var exerciseId: String?
     @State private var side: Side = .left
     @State private var crown: Double = 8

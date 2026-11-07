@@ -32,6 +32,10 @@ final class StoreController {
     func bootstrap() {
         rootURL = resolveFolder()
         open(root: rootURL)
+        #if os(iOS)
+        // After the store is open, so watch sets queued while the phone app was closed have somewhere to land.
+        WeightsSession.shared.connectWatch()
+        #endif
     }
 
     private func resolveFolder() -> URL {
